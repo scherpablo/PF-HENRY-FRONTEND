@@ -35,6 +35,8 @@ const UsersTable = () => {
   const cookieStatus = useSelector((state) => state.cookies.cookiesAccepted);
   const authData = getDataFromSelectedPersistanceMethod(cookieStatus);
 
+  console.log(authData.jwt)
+
   const roleTranslations = {
     admin: "Admin",
     customer: "Cliente",
