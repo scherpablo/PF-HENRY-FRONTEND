@@ -11,16 +11,16 @@ import {
 import { Link } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
 import { useEffect, useState } from "react";
-import { useLocalStorage } from "../../Hook/useLocalStorage";
 import { useNavigate } from "react-router-dom";
+import { useLocalStorage } from "../../Hook/useLocalStorage";
 //UTILS
 import { getDataFromSelectedPersistanceMethod } from "../../utils/authMethodSpliter";
 import {
   fetchWishList,
   fetchAddItemWish,
 } from "../../services/wishListServices";
+import { fetchProductCartPost } from "../../services/cartServices";
 import { addItem } from "../../redux/slices/cartSlice";
-import { fetchProduct } from "../../services/productServices";
 import PATHROUTES from "../../helpers/pathRoute";
 //COMPONENTS
 import UserPanelProductCard from "../UserPanelProductCard/UserPanelProductCard.component";
@@ -35,24 +35,23 @@ const WhishListProfileComponent = () => {
     alignSelf: "center",
     backgroundColor: "black",
   };
-
-  const [storedProducts, setStoredProducts] = useLocalStorage();
-
   const navigate = useNavigate();
   const dispatch = useDispatch();
+  const [storedProducts, setStoredProducts] = useLocalStorage();
+  const [isLoading, setIsLoading] = useState(true);
+  const [firstCharge, setFirstCharge] = useState(false);
   const login = useSelector((state) => state.user.login);
-  const { cookiesAccepted } = useSelector((state) => state.cookies);
   const cookieStatus = useSelector((state) => state.cookies.cookiesAccepted);
   const authData = getDataFromSelectedPersistanceMethod(cookieStatus);
-  const userId = authData ? authData.userId : null; //Información del usuario
-  const wishListCards = useSelector((state) => state.wishlist.products); //Estado global Wishlist
+  const userId = authData ? authData.userId : null;
+  const wishListCards = useSelector((state) => state.wishlist.products);
 
-  const chargeWishListProduct = () => {
-    fetchWishList(userId, dispatch); //Recarga de el estado global Wishlist
+  const formatPrice = (price) => {
+    return "$" + price.toFixed(0).replace(/(\d)(?=(\d{3})+$)/g, "$1.");
   };
 
   const handleCardClick = (id) => {
-    const path = PATHROUTES.DETAIL.replace(":id", id); // Redireccionamient al detail
+    const path = PATHROUTES.DETAIL.replace(":id", id);
     navigate(path);
   };
 
@@ -68,7 +67,7 @@ const WhishListProfileComponent = () => {
     } else {
       setStoredProducts(product);
       dispatch(addItem());
-      dispatch(fetchProduct(product, cookiesAccepted));
+      dispatch(fetchProductCartPost(product, cookieStatus));
       Swal.fire({
         icon: "success",
         title: "Producto agregado exitosamente",
@@ -88,44 +87,49 @@ const WhishListProfileComponent = () => {
   };
 
   const [cardStatus, setCardStatus] = useState(
-    wishListCards.map((card) => {
-      return { id: card.id, status: false }; //Estado de productos seleccionados
+    wishListCards?.map((card) => {
+      return { id: card.id, status: false };
     })
   );
 
-  const [isLoading, setIsLoading] = useState(true); //Estado de carga
-
   const resetSelection = () => {
     const reset = wishListCards.map((card) => {
-      return { id: card.id, status: false }; // Recarga del estado de seleccionados
+      return { id: card.id, status: false };
     });
     setCardStatus(reset);
   };
 
   useEffect(() => {
-    chargeWishListProduct(); //Recarga del estado global Wishlist al iniciar el componente
-  }, []);
-
+    setIsLoading(true);
+    fetchWishList(dispatch, cookieStatus);
+  }, [dispatch]);
+  
   useEffect(() => {
+ 
     resetSelection();
     if (wishListCards[0] && wishListCards[0].ProductImages) {
-      //Si ya cargo las imagenes
-      setIsLoading(false); //Deja de cargar
+      setIsLoading(false);
     } else {
-      chargeWishListProduct(); //Sino recarga el estado global
+      fetchWishList(dispatch, cookieStatus);
     }
-  }, [wishListCards && wishListCards[0] && wishListCards[0].ProductImages]);
+  }, [dispatch, wishListCards && wishListCards[0] && wishListCards[0].ProductImages]);
+  
+  useEffect(() => {
+    setFirstCharge(true);
+    if (wishListCards?.length === 0 && firstCharge) {
+      setIsLoading(false);
+    }
+  }, [wishListCards]);
 
   const deleteProduct = (id) => {
     setIsLoading(true);
-    fetchAddItemWish(dispatch, userId, id); // ELiminar un producto
+    fetchAddItemWish(dispatch, id, cookieStatus);
   };
 
   const handleClickDeleteButton = () => {
     cardStatus.forEach((card) => {
-      //Recorrer el estado de productos seleccionados
       if (card.status) {
-        deleteProduct(card.id); // Eliminar los seleccionados
+        deleteProduct(card.id);
       }
     });
   };
@@ -135,7 +139,7 @@ const WhishListProfileComponent = () => {
     let newCardStatus = [...cardStatus];
     if (name === "all") {
       newCardStatus = newCardStatus.map((card) => {
-        return { id: card.id, status: checked }; //Manejo del estado de seleccionados
+        return { id: card.id, status: checked };
       });
     } else {
       newCardStatus[name].status = checked;
@@ -146,11 +150,10 @@ const WhishListProfileComponent = () => {
   const buttons = [
     {
       text: "Agregar al carrito",
-      action: handleAddToCart, // Botones que renderiza la card
+      action: handleAddToCart,
       color: "#fd611a",
     },
   ];
-
   return (
     <Box
       sx={{
@@ -164,7 +167,7 @@ const WhishListProfileComponent = () => {
         },
       }}
     >
-      {wishListCards.length === 0 ? (
+      {wishListCards?.length === 0 && !isLoading ? (
         <Box
           sx={{
             width: "100%",
@@ -225,7 +228,7 @@ const WhishListProfileComponent = () => {
             </Button>
           </Box>
           <Box sx={{ mt: "4em" }}>
-            {wishListCards.map((card, index) => {
+            {wishListCards?.map((card, index) => {
               return (
                 <Box
                   key={index}
@@ -240,27 +243,34 @@ const WhishListProfileComponent = () => {
                       width: "100%",
                       display: "flex",
                       flexDirection: "row",
+                      
                       height: "100%",
                       pt: "1em",
                       pb: "1em",
                     }}
                   >
-                    <Checkbox
-                      name={`${index}`}
-                      checked={cardStatus[index]?.status}
-                      onChange={handleChange}
-                    />
-                    <Box sx={{ flexGrow: "1" }}>
+                    {cardStatus?.length > 0 && (
+                      <Checkbox
+                        name={`${index}`}
+                        checked={cardStatus[index]?.status}
+                        onChange={handleChange}
+                      />
+                    )}
+                    <Box sx={{ flexGrow: "1",
+             
+                  }}>
                       <UserPanelProductCard
+                        setIsLoading={setIsLoading}
                         handleCardClick={handleCardClick}
                         actionParam={card}
+            
                         product={{
                           id: card.id,
                           name: card.name,
                           image: card.ProductImages
                             ? card.ProductImages[0].address
                             : "",
-                          budget: `$${card.price}`,
+                          budget: card.price,
                         }}
                         buttons={buttons}
                       />

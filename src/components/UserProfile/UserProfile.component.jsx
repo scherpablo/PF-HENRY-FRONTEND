@@ -8,6 +8,7 @@ import { Avatar, Box, CardMedia, Divider, Typography } from "@mui/material";
 import getFirstLetters from "../../helpers/getFirstLetters";
 //MODAL
 import EditModal from "../EditModal/EditModal";
+import { getDataFromSelectedPersistanceMethod } from "../../utils/authMethodSpliter";
 
 const UserProfile = () => {
   const [editModalIsOpen, setEditModalIsOpen] = useState(false);
@@ -16,6 +17,8 @@ const UserProfile = () => {
     previousValue: "",
     dataList: [],
   });
+  const cookieStatus = useSelector((state) => state.cookies.cookiesAccepted);
+  const authData = getDataFromSelectedPersistanceMethod(cookieStatus);
 
   const {
     name,
@@ -27,8 +30,8 @@ const UserProfile = () => {
     image,
     userAddress,
     login,
+    communication_preference,
   } = useSelector((state) => state.user);
-
   const initialLetersUsers = {
     name: getFirstLetters(name),
     surname: getFirstLetters(surname),
@@ -314,7 +317,24 @@ const UserProfile = () => {
                 onClick={() => handleEditClick("dirección")}
               />
             </Box>
-            <Divider />
+            {authData?.userRole === "customer" && <Divider sx={dividerStyle} />}
+            {authData?.userRole === "customer" && (
+              <Box sx={itemBoxStyle}>
+                <Box sx={{ flexGrow: "1" }}>
+                  <Typography
+                    variant="caption"
+                    sx={{ mb: ".1em", fontWeight: "bold", color: "#fd611a" }}
+                  >
+                    Preferencia de comunicación
+                  </Typography>
+                  <Typography variant="body2" sx={{ mb: ".5em" }}>
+                    {communication_preference
+                      ? communication_preference
+                      : "Pendiente"}
+                  </Typography>
+                </Box>
+              </Box>
+            )}
           </Box>
         </Box>
       ) : (

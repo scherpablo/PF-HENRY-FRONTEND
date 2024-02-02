@@ -5,6 +5,7 @@ const initialState = {
   items: [],
   total: 0,
   id: null,
+  cartUser: [],
 };
 
 const cartSlice = createSlice({
@@ -19,6 +20,9 @@ const cartSlice = createSlice({
       if (storedProducts) {
         state.items = Object.values(storedProducts).map((product) => ({ ...product }));
       }
+    },
+    resetCart: (state) => {
+      state.items = [];
     },
     updateItem: (state, action) => {
       const { id, count } = action.payload;
@@ -66,9 +70,16 @@ const cartSlice = createSlice({
     idShop: (state, action) => {
       state.id = action.payload
     },
+    getCart: (state, action) => {
+      const sortCartUser = action.payload
+      state.cartUser = sortCartUser.sort((a, b) => {
+        if (a.date < b.date) return 1;
+        if (a.date > b.date) return -1;
+      })
+    }
   },
 });
 
-export const { addItem, updateItem, removeItem, totalItem, idShop } = cartSlice.actions;
+export const { addItem, updateItem, removeItem, totalItem, idShop, resetCart, getCart } = cartSlice.actions;
 export default cartSlice.reducer;
 

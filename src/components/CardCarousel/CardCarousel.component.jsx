@@ -1,34 +1,35 @@
-import React, { useState, useEffect } from "react";
-import {
-  Card,
-  CardContent,
-  Typography,
-  Box,
-  CardMedia,
-  useTheme,
-} from "@mui/material";
+//HOOKS
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import Slider from "react-slick";
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
+//MATREIAL UI
+import { CardContent, Typography, Box, CardMedia } from "@mui/material";
 import { Container } from "@mui/system";
+//FIREBASE
+import { viewDetailProduct } from "../../services/firebaseAnayticsServices";
 
-const CardCarousel = ({ allProducts }) => {
+import miVideo from "/carousel/prueba.mp4";
+import DiscountBanner from "./CarouselParts/DiscountBanner";
+
+const CardCarousel = ({ allProducts, discountMessage }) => {
   const [productData, setProductData] = useState([]);
-  const theme = useTheme();
+  const [dataLoaded, setDataLoaded] = useState(false);
 
   useEffect(() => {
-    if (Array.isArray(allProducts)) {
-      const filteredProducts = allProducts
-        .filter(
-          (product) =>
-            product?.ProductImages[0]?.address.endsWith(".png") &&
-            product.name &&
-            product.price
-        )
-        .slice(0, 5);
-
+    if (Array.isArray(allProducts) && allProducts.length > 0) {
+      const filteredProducts = allProducts.filter(
+        (product) =>
+          product?.ProductImages[0] &&
+          product.name &&
+          product.price &&
+          product.carousel === true
+      );
       setProductData(filteredProducts);
+      setDataLoaded(true);
+    } else {
+      setDataLoaded(false);
     }
   }, [allProducts]);
 
@@ -42,124 +43,159 @@ const CardCarousel = ({ allProducts }) => {
     autoplaySpeed: 5000,
   };
 
-  return (
+  const formatPrice = (price) => {
+    return "$" + price.toFixed(0).replace(/(\d)(?=(\d{3})+$)/g, "$1.");
+  };
+
+  return dataLoaded ? (
     <Box
       sx={{
         position: "relative",
         width: "100%",
-        height: "260px",
-        marginTop: "8px",
+        maxHeight: "260px",
         overflow: "hidden",
-        background: `linear-gradient(to bottom left, rgba(0, 0, 0, 1) 40%, #1afd94de 90%)`,
+        opacity: "1",
+        background: `linear-gradient(to bottom left, rgba(0, 0, 0, 1) 60%, rgba(26, 253, 148, 0) 96%)`,
+        visibility: "visible",
+        display: "none",
+        "@media (min-width: 861px)": {
+          display: "block",
+        },
       }}
     >
+      <video
+        autoPlay
+        loop
+        muted
+        style={{
+          position: "absolute",
+          width: "100%",
+          height: "100%",
+          objectFit: "cover",
+          opacity: 0.7,
+          zIndex: -1,
+        }}
+        playbackrate={0.4}
+      >
+        <source src={miVideo} type="video/mp4" />
+        Tu navegador no soporta el elemento de video.
+      </video>
       <Slider {...settings}>
         {productData.map((product) => (
           <Box
             key={product.id}
             sx={{
-              marginBottom: "8px",
-              marginRight: "3%",
+              height: "262px",
             }}
           >
             <Link
               to={`/product/${product.id}`}
+              onClick={() => viewDetailProduct(product, true)}
               style={{ textDecoration: "none" }}
             >
               <Box
                 sx={{
+                  paddingInline: "5rem",
                   display: "flex",
-                  flexDirection: "row",
-                  alignItems: "center",
-                  justifyContent: "space-evenly",
+                  justifyContent: "space-between",
                   height: "100%",
-                  textAlign: "center",
+                  overflow: "hidden",
                 }}
               >
                 <CardContent
                   sx={{
+                    overflow: "hidden",
+                    flex: "1",
                     display: "flex",
                     flexDirection: "column",
-                    alignItems: "center", // Alinea el contenido al centro
-                    justifyContent: "center",
-                    color: "white",
-                    flex: "1",
+                    justifyContent: "space-evenly",
+                    textAlign: "center",
                   }}
                 >
-                  <Container
+                  <Typography
+                    variant="h2"
+                    component="div"
+                    fontWeight="bold"
                     sx={{
-                      display: "flex",
-                      flexDirection: "column",
-                      alignItems: "center", // Alinea el contenido al centro
-                      justifyContent: "center",
-                      width: "auto", // Ancho fijo para el contenedor del nombre
-                      height: "170px", // Alto fijo para el contenedor del nombre
-                      overflow: "hidden", // Oculta el contenido adicional si es demasiado largo
+                      textStroke: ".1px black",
+                      minWidth: "280px",
+                      color: "white",
+                      fontSize: {
+                        xs: ".8rem",
+                        sm: "1.8rem",
+                        md: "1.6rem",
+                        lg: "2.4rem",
+                        xl: "3.4rem",
+                      },
+                      letterSpacing: "6px",
                     }}
                   >
-                    <Typography
-                      variant="h2"
-                      component="div"
-                      fontWeight="bold"
-                      sx={{
-                        fontSize: {
-                          xs: "1.8rem",
-                          sm: "2.8rem",
-                          md: "3.2rem",
-                        },
-                      }}
-                    >
-                      {product.name}
-                    </Typography>
-                  </Container>
-                  <Container
+                    {product.name.toUpperCase()}
+                  </Typography>
+
+                  <Typography
+                    variant="h4"
+                    color="#ff5000"
                     sx={{
-                      display: "flex",
-                      flexDirection: "row",
-                      alignItems: "flex-end",
-                      justifyContent: "flex-end",
-                      alignContent: "flex-end",
+                      textShadow: "0px 0px 10px rgb(0 0 0 / 80%)",
+                      fontSize: {
+                        xs: ".6rem",
+                        sm: "1.4rem",
+                        md: "1.6rem",
+                        lg: "2rem",
+                        xl: "2.5rem",
+                      },
+                      animation: "blink 1s infinite",
+                      fontWeight: "700",
+                      padding: "10px",
+                      borderRadius: "5px",
                     }}
                   >
-                    <Typography
-                      variant="h4"
-                      color="#ff5000"
-                      fontWeight="bold"
-                      sx={{
-                        p: "5px",
-                        fontSize: {
-                          xs: "1rem",
-                          sm: "1.5rem",
-                          md: "2rem",
-                        },
-                        marginLeft: "auto",
-                      }}
-                    >
-                      PROMOCION: ${product.price}
-                    </Typography>
-                  </Container>
+                    OFERTA {formatPrice(product.price)}
+                  </Typography>
+                  <style jsx="true">{`
+                    @keyframes blink {
+                      50%,
+                      5%,
+                      100% {
+                        opacity: 1;
+                      }
+                      90%,
+                      100% {
+                        opacity: 0.5;
+                      }
+                    }
+                  `}</style>
                 </CardContent>
-                <CardMedia
-                  component="img"
-                  alt={product.name}
-                  height="200px"
-                  image={product.ProductImages[0]?.address}
+                <Container
                   sx={{
-                    width: "250px",
-                    border: "1px solid transparent",
-                    marginTop: "8px",
-                    marginRight: "3%",
-                    boxShadow: "0px 0px 10px rgba(252, 252, 252, 0.5)",
-                    borderRadius: "5px",
+                    flex: "1",
+                    display: "flex",
+                    justifyContent: "center",
+                    position: "relative",
                   }}
-                />
+                >
+                  <CardMedia
+                    component="img"
+                    alt={product.name}
+                    image={product.ProductImages[0]?.address}
+                    sx={{
+                      width: "220px",
+                      height: "220px",
+                      position: "relative",
+                      right: "-60px",
+                      top: "20px"
+                    }}
+                  />
+                  <DiscountBanner text={product.banner} rotate={50} />
+                </Container>
               </Box>
             </Link>
           </Box>
         ))}
       </Slider>
     </Box>
-  );
+  ) : null;
 };
 
 export default CardCarousel;

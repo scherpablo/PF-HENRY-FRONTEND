@@ -13,17 +13,22 @@ import {
   fetchWishList,
 } from "../../services/wishListServices";
 //UTILS
-import { getAuthDataCookie } from "../../utils/cookiesFunctions";
+import { getDataFromSelectedPersistanceMethod } from "../../utils/authMethodSpliter";
 
 const ProductCard = styled(Card)({
-  width: 300,
-  height: 350,
+  width: 320,
+  height: 400,
+  transition: "transform 0.3s ease-in-out",
+
+  "&:hover": {
+    transform: "scale(1.05)",
+  },
 });
 
 const ProductMedia = styled(CardMedia)({
-  padding: 24,
-  height: 180,
-  width: 180,
+  padding: 18,
+  height: 200,
+  width: 200,
   objectFit: "cover",
   margin: "auto",
 });
@@ -33,33 +38,25 @@ const ProductPrice = styled(Typography)({
   fontWeight: "bold",
   marginTop: "auto",
   marginBottom: 24,
-  fontSize: 28,
+  fontSize: 24,
 });
 
 const CardProduct = ({ product }) => {
-  const authData = getAuthDataCookie("authData");
-  const userId = authData ? authData.userId : null;
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const [isDesired, setIsDesired] = useState(false);
-  const { id, name, price, ProductImages, ProductCategories } = product;
   const wishlistProducts = useSelector((state) => state.wishlist.products);
   const login = useSelector((state) => state.user.login);
+  const cookieStatus = useSelector((state) => state.cookies.cookiesAccepted);
+  const authData = getDataFromSelectedPersistanceMethod(cookieStatus);
+  const userId = authData ? authData.userId : null;
+  const userRole = authData ? authData.userRole : null;
+  const { id, name, price, ProductImages, ProductCategories, ProductStock } =
+    product;
 
-  useEffect(() => {
-    if (login && wishlistProducts) {
-      const isProductInWishlist = wishlistProducts.some((p) => p.id === id);
-      setIsDesired(isProductInWishlist);
-    } else {
-      setIsDesired(false);
-    }
-  }, [wishlistProducts, id, login]);
-
-  useEffect(() => {
-    if (login && !wishlistProducts) {
-      fetchWishList(userId, dispatch);
-    }
-  }, [userId, dispatch, login, wishlistProducts]);
+  const formatPrice = (price) => {
+    return "$" + price.toFixed(0).replace(/(\d)(?=(\d{3})+$)/g, "$1.");
+  };
 
   const categoryName =
     ProductCategories && ProductCategories.length > 0
@@ -74,34 +71,110 @@ const CardProduct = ({ product }) => {
     navigate(`/products/filters/${categoryName}`);
   };
 
-  const handleDesiredClick = (e) => {
-    e.stopPropagation();
-    if (login) {
-      fetchAddItemWish(dispatch, userId, product.id);
+  const handleDesiredClick = () => {
+    if (login && userRole === "customer") {
+      console.log('aca')
+      fetchAddItemWish(dispatch, product.id, cookieStatus);
+    } else if (login && userRole !== "customer") {
+      Swal.fire({
+        icon: "info",
+        title: "Acceso Denegado",
+        text: "Tu rol de usuario no posee lista de deseos.",
+        confirmButtonColor: "#3085d6",
+        confirmButtonText: "Ok",
+      });
     } else {
-      Swal.fire("Error", "debe registrarse para añadir a la lista de deseos");
+      Swal.fire({
+        icon: "info",
+        title: "Acceso Privado",
+        text: "Debe registrarse para añadir a la lista de deseos.",
+        confirmButtonColor: "#3085d6",
+        confirmButtonText: "Ok",
+      });
     }
   };
+
+  useEffect(() => {
+    if (login) {
+      if (wishlistProducts) {
+        const isProductInWishlist = wishlistProducts.some((p) => p.id === id);
+        setIsDesired(isProductInWishlist);
+      } else {
+        fetchWishList(userId, dispatch, cookieStatus);
+      }
+    } else {
+      setIsDesired(false);
+    }
+  }, [userId, dispatch, login, wishlistProducts]);
+
   return (
     <>
       <ProductCard
         sx={{
           m: 1,
           padding: 0,
-          margin: 0,
+          marginBottom: 2,
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
+          width: {xxs :'300px', md :'320px'  },
           justifyContent: "space-between",
           boxShadow: "0 0 10px rgba(0, 0, 0, 0.5)",
+          position: "relative",
         }}
       >
+        {ProductStock?.amount <= 5 && ProductStock?.amount > 1 && (
+          <Typography
+            variant="body2"
+            sx={{
+              display: "flex",
+              justifyContent: "center",
+              color: "grey",
+              fontSize: 'small',
+              fontWeight: 700,
+              position: "absolute",
+              top: 90,
+              right: -10,
+              width: "auto",
+              
+              transform: "rotate(45deg)",
+            }}
+          >
+            {ProductStock?.amount}
+            {ProductStock?.amount === 1
+              ? " unidad disponible"
+              : " unidades disponibles "}
+          </Typography>
+        )}
+        {ProductStock?.amount === 0 && (
+          <Typography
+            variant="body1"
+            sx={{
+              display: "flex",
+              justifyContent: "center",
+              color: "white",
+              fontWeight: 700,
+              position: "absolute",
+              top: 90,
+              right: 5,
+              width: "120px",
+              transform: "rotate(45deg)",
+              backgroundColor: "red",
+            }}
+          >
+            !Sin stock!
+          </Typography>
+        )}
         <Box sx={{ display: "flex", alignItems: "center", cursor: "pointer" }}>
           {categoryName && (
             <Typography
+              className="hover-underline-animation-dark"
               variant="subtitle2"
               onClick={handleCategoryClick}
-              sx={{ paddingTop: "20px", zIndex: "1000" }}
+              sx={{
+                paddingTop: "20px",
+                zIndex: "999",
+              }}
             >
               <span
                 style={{
@@ -118,7 +191,7 @@ const CardProduct = ({ product }) => {
           <BookmarkIcon
             onClick={handleDesiredClick}
             sx={{
-              cursor: login ? null : "not-allowed",
+              cursor: login ? "pointer" : "not-allowed",
               position: "relative",
               top: "20px",
               right: "-30px",
@@ -136,9 +209,6 @@ const CardProduct = ({ product }) => {
               sx={{
                 cursor: "pointer",
                 transition: "transform 0.3s",
-                "&:hover": {
-                  transform: "scale(1.1)",
-                },
               }}
             />
             <CardContent>
@@ -147,7 +217,16 @@ const CardProduct = ({ product }) => {
                 component="div"
                 color="textPrimary"
                 align="center"
-                sx={{ marginTop: "-20px" }}
+                sx={{
+                  fontSize: "20px",
+                  marginTop: "-20px",
+                  lineHeight: "1.2",
+                  maxHeight: "2.4em",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  display: "-webkit-box",
+                  webkitLineClamp :'2'
+                }}
               >
                 {name}
               </Typography>
@@ -157,8 +236,8 @@ const CardProduct = ({ product }) => {
               align="center"
               sx={{ fontWeight: "900" }}
             >
- ${price.toLocaleString('es-ES',{ minimumFractionDigits: 0, maximumFractionDigits: 0 })}
-             </ProductPrice>
+              {formatPrice(price)}
+            </ProductPrice>
           </Box>
         </Link>
       </ProductCard>

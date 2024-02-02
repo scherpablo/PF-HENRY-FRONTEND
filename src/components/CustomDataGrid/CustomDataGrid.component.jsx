@@ -9,15 +9,17 @@ import {
   GridToolbarQuickFilter,
 } from "@mui/x-data-grid";
 import DeleteIcon from "@mui/icons-material/Delete";
+import ViewCarouselIcon from "@mui/icons-material/ViewCarousel";
 import { styled } from "@mui/material/styles";
 
 export const CustomToolbar = ({
   setFilterButtonEl,
   handleDelete,
+  handleCarousel,
   dataName,
   selectedRows,
+  showCarouselIcon,
 }) => {
-
   return (
     <GridToolbarContainer
       sx={{
@@ -31,6 +33,11 @@ export const CustomToolbar = ({
         <Button color="inherit" onClick={() => handleDelete(selectedRows)}>
           <DeleteIcon sx={{ color: "black" }} />
         </Button>
+        {showCarouselIcon && (
+          <Button color="inherit" onClick={() => handleCarousel(selectedRows)}>
+            <ViewCarouselIcon sx={{ color: "black" }} />
+          </Button>
+        )}
         <Typography variant="h5" sx={{ flexGrow: "1" }}>
           {dataName}
         </Typography>
@@ -44,13 +51,23 @@ export const CustomToolbar = ({
           justifyContent: "space-around",
         }}
       >
-        <GridToolbarColumnsButton sx={{ color: "black" }} />
+        <GridToolbarColumnsButton
+          sx={{
+            color: "black",
+            display: "flex",
+            flexDirection: "column",
+          }}
+        />
         <GridToolbarFilterButton
           ref={setFilterButtonEl}
-          sx={{ color: "black" }}
+          sx={{ color: "black", display: "flex", flexDirection: "column" }}
         />
-        <GridToolbarDensitySelector sx={{ color: "black" }} />
-        <GridToolbarExport sx={{ color: "black" }} />
+        <GridToolbarDensitySelector
+          sx={{ color: "black", display: "flex", flexDirection: "column" }}
+        />
+        <GridToolbarExport
+          sx={{ color: "black", display: "flex", flexDirection: "column" }}
+        />
       </Box>
     </GridToolbarContainer>
   );
@@ -69,33 +86,87 @@ export const StyledDataGrid = styled(DataGrid)(({ theme }) => ({
   },
   "& .MuiDataGrid-row": {
     "&:focus-within": {
-      backgroundColor: "#fb773a",
+      backgroundColor: "#f8b597",
     },
     "&.Mui-selected": {
       "& .MuiDataGrid-cell:focus-within": {
         outline: "0px",
       },
-      backgroundColor: "#fd611a",
+      backgroundColor: "#f8b597",
       "&:hover": {
-        backgroundColor: "#fb773a",
+        backgroundColor: "#f8b597",
       },
     },
   },
   "& .row--deleted": {
-    backgroundColor: "red",
+    backgroundColor: "#f7a2a2",
     "&:hover": {
-      backgroundColor: "#ff2b2b",
+      backgroundColor: "#f7a2a2",
     },
     "&:active": {
-      backgroundColor: "#ff2b2b",
+      backgroundColor: "#f7a2a2",
     },
     "&:focus-within": {
-      backgroundColor: "#ff2b2b",
+      backgroundColor: "#f7a2a2",
     },
     "&.Mui-selected": {
-      backgroundColor: "red",
+      backgroundColor: "#f7a2a2",
       "&:hover": {
-        backgroundColor: "#ff2b2b",
+        backgroundColor: "#f7a2a2",
+      },
+    },
+  },
+  "& .row--carousel": {
+    backgroundColor: "#8dbaf6",
+    "&:hover": {
+      backgroundColor: "#8dbaf6",
+    },
+    "&:active": {
+      backgroundColor: "#8dbaf6",
+    },
+    "&:focus-within": {
+      backgroundColor: "#8dbaf6",
+    },
+    "&.Mui-selected": {
+      backgroundColor: "#8dbaf6",
+      "&:hover": {
+        backgroundColor: "#8dbaf6",
+      },
+    },
+  },
+  "& .row--finalized": {
+    backgroundColor: "#a2f7a9",
+    "&:hover": {
+      backgroundColor: "#a2f7a9",
+    },
+    "&:active": {
+      backgroundColor: "#a2f7a9",
+    },
+    "&:focus-within": {
+      backgroundColor: "#a2f7a9",
+    },
+    "&.Mui-selected": {
+      backgroundColor: "#a2f7a9",
+      "&:hover": {
+        backgroundColor: "#a2f7a9"
+      },
+    },
+  },
+  "& .row--canceled": {
+    backgroundColor: "#c1acf8",
+    "&:hover": {
+      backgroundColor: "#c1acf8",
+    },
+    "&:active": {
+      backgroundColor: "#c1acf8",
+    },
+    "&:focus-within": {
+      backgroundColor: "#c1acf8",
+    },
+    "&.Mui-selected": {
+      backgroundColor: "#c1acf8",
+      "&:hover": {
+        backgroundColor: "#c1acf8",
       },
     },
   },

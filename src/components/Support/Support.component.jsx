@@ -9,10 +9,10 @@ import {
   Typography,
   Button,
   CircularProgress,
-  Grid,
 } from "@mui/material";
 import SendIcon from "@mui/icons-material/Send";
-import Textarea from "@mui/joy/Textarea";
+import { TextareaAutosize } from "@mui/base/TextareaAutosize";
+
 //HELPERS
 import {
   validateName,
@@ -24,6 +24,8 @@ import {
 import { textSupport } from "../../utils/objectsTexts";
 //SWEET ALERT
 import Swal from "sweetalert2";
+//FIREBASE
+import { userSubmitForm } from "../../services/firebaseAnayticsServices";
 
 const backendUrl = import.meta.env.VITE_BACKEND_URL;
 const reCaptchaKey = import.meta.env.VITE_RECAPTCHA_V3;
@@ -50,8 +52,12 @@ const SupportComponent = () => {
       setPostRequest(data);
       return data;
     } catch (error) {
-      console.log("Error al enviar el formulario", error);
-      throw error;
+      Swal.fire({
+        icon: "error",
+        title: "Error al enviar el formulario",
+        text: `${error}`,
+        confirmButtonColor: "#fd611a",
+      });
     }
   };
 
@@ -76,36 +82,54 @@ const SupportComponent = () => {
   //HANDLES CHANGES
   const handleChangeName = (value) => {
     setName(value);
-    setErrorName({
-      error: !validateName(value),
-      message: "El nombre debe tener al menos 3 caracteres",
+    setErrorName(() => {
+      const error = value.trim() !== "" && !validateName(value);
+      return {
+        error,
+        message: error
+          ? "El nombre debe tener al menos 3 caracteres y no puede contener números"
+          : "",
+      };
     });
     updateFormComplete();
   };
+
   const handleChangePhone = (value) => {
     setPhone(value);
-    setErrorPhone({
-      error: !validatePhone(value),
-      message: "El teléfono debe tener 10 dígitos",
+    setErrorPhone(() => {
+      const error = value.trim() !== "" && !validatePhone(value);
+      return {
+        error,
+        message: error ? "El teléfono debe tener 10 dígitos" : "",
+      };
     });
     updateFormComplete();
   };
+
   const handleChangeEmail = (value) => {
     setEmail(value);
-    setErrorEmail({
-      error: !validateEmail(value),
-      message: "El correo electrónico no es válido",
+    setErrorEmail(() => {
+      const error = value.trim() !== "" && !validateEmail(value);
+      return {
+        error,
+        message: error ? "El correo electrónico no es válido" : "",
+      };
     });
     updateFormComplete();
   };
+
   const handleChangeArea = (value) => {
     setArea(value);
-    setErrorArea({
-      error: !validateArea(value),
-      message: "El mensaje debe tener al menos 10 caracteres",
+    setErrorArea(() => {
+      const error = value.trim() !== "" && !validateArea(value);
+      return {
+        error,
+        message: error ? "El mensaje debe tener al menos 50 caracteres" : "",
+      };
     });
     updateFormComplete();
   };
+
   const updateFormComplete = () => {
     setFormComplete(
       validateName(name) &&
@@ -118,7 +142,6 @@ const SupportComponent = () => {
   //HANDLE SUBMIT
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     if (
       !validateName(name) ||
       !validatePhone(phone) ||
@@ -132,7 +155,6 @@ const SupportComponent = () => {
       });
       return;
     }
-
     try {
       setIsLoading(true);
 
@@ -150,12 +172,13 @@ const SupportComponent = () => {
         setArea("");
         setPostRequest(null);
         setFormComplete(false);
+        userSubmitForm("Soporte");
       } else {
         const errorMsg = postRequest?.response;
         Swal.fire({
           icon: "error",
           title: "Oops...",
-          text: errorMsg || "Hubo un error en el servidor.",
+          text: "Hubo un error en el servidor.",
         });
       }
     } catch (error) {
@@ -184,8 +207,13 @@ const SupportComponent = () => {
         }}
       >
         <Typography
-          variant="h4"
-          sx={{ color: "#fff", textTransform: "uppercase", fontWeight: "900" }}
+          sx={{
+            color: "#fff",
+            textTransform: "uppercase",
+            fontWeight: "800",
+            fontSize: "1.7rem",
+            margin: "10px",
+          }}
         >
           Soporte
         </Typography>
@@ -198,7 +226,7 @@ const SupportComponent = () => {
           display: "flex",
           justifyContent: "center",
           margin: "0 auto",
-          "@media (max-width: 768px)": {
+          "@media (max-width: 1140px)": {
             display: "flex",
             flexDirection: "column",
           },
@@ -215,9 +243,7 @@ const SupportComponent = () => {
               flexDirection: "column",
               justifyContent: "center",
               padding: "50px",
-              marginBottom: "50px",
-
-              "@media (max-width: 768px)": {
+              "@media (max-width: 1140px)": {
                 width: "100%",
                 marginBottom: "-10px",
                 marginTop: "10px",
@@ -267,25 +293,33 @@ const SupportComponent = () => {
               name="email"
               autoComplete="email"
               onChange={(e) => handleChangeEmail(e.target.value)}
+              sx={{ marginBottom: "20px" }}
             />
-            <Textarea
+            <TextareaAutosize
               id="contenet"
               disabled={false}
-              minRows={4}
+              minRows={10}
               size="lg"
+              name="Outlined"
               variant="outlined"
               required={true}
-              error={errorArea.error}
+              error={errorArea.error ? errorArea : undefined}
               placeholder="Ejemplo: Tengo un CPU que no enciende. Queda la pantalla negra."
               value={area}
               onChange={(e) => handleChangeArea(e.target.value)}
-              sx={{ margin: "20px 0" }}
+              style={{
+                borderRadius: "5px",
+                border: "1px solid #C7D0DD",
+                fontFamily: "Roboto",
+                fontSize: "16px",
+                padding: "10px",
+              }}
             />
             {errorArea.error && (
               <Typography
                 variant="body2"
                 color="error"
-                sx={{ margin: "-15px 0 25px 15px", fontSize: "12px" }}
+                sx={{ margin: "10px 0 25px 15px", fontSize: "12px" }}
               >
                 {errorArea.message}
               </Typography>
@@ -299,6 +333,7 @@ const SupportComponent = () => {
                 padding: "12px 0",
                 "&:hover": { backgroundColor: "#000" },
                 fontSize: "18px",
+                marginTop: "20px",
               }}
               endIcon={<SendIcon />}
             >
@@ -319,18 +354,17 @@ const SupportComponent = () => {
             display: "flex",
             justifyContent: "center",
             padding: "50px",
-
-            "@media (max-width: 768px)": {
+            "@media (max-width: 1140px)": {
               width: "100%",
               textAlign: "justify",
-              borderBottom: "1px solid #000",
+              borderBottom: "1px solid #00000050",
             },
           }}
         >
           {textSupport.map((item, index) => (
             <Box key={index}>
               <Typography
-                variant="h5"
+                variant="h4"
                 sx={{
                   marginBottom: "10px",
                   fontWeight: "bold",
@@ -344,6 +378,7 @@ const SupportComponent = () => {
                   key={pIndex}
                   sx={{
                     marginBottom: "10px",
+                    textAlign: "justify",
                     "@media (max-width: 480px)": { margin: "20px 0" },
                   }}
                 >

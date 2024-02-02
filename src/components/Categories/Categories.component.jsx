@@ -1,6 +1,6 @@
 //HOOKS
-import { useState } from "react";
-import { useDispatch } from "react-redux";
+import { useState, useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
 //MATERIAL UI
 import {
   Box,
@@ -13,12 +13,9 @@ import {
   Select,
 } from "@mui/material";
 import styled from "@emotion/styled";
-//DATA BASE
-import data from "../../DataBase/categories.json";
-//UTILS
-import { brands } from "../../utils/objectsTexts";
 //SERVICES
-import { fetchProductsByBrand } from "../../services/productServices";
+import { fetchCategories } from "../../services/categoriesServices";
+import { fetchBrands } from "../../services/brandsServices";
 //REDUX
 import {
   resetState,
@@ -26,10 +23,13 @@ import {
   filterByBrand,
   filterByCategory,
 } from "../../redux/slices/productSlice";
+//FIREBASE
+import { filtersOrSortEvents } from "../../services/firebaseAnayticsServices";
 
 const FiltersSorting = () => {
   const dispatch = useDispatch();
-  const { categories } = data;
+  const { categories } = useSelector((state) => state.categories);
+  const { brands } = useSelector((state) => state.brands);
   const [selectedBrand, setSelectedBrand] = useState("default");
   const [selectedPrice, setSelectedPrice] = useState("default");
   const [selectedCategory, setSelectedCategory] = useState("all");
@@ -39,6 +39,7 @@ const FiltersSorting = () => {
     setSelectedCategory(categoryName);
     setSelectedBrand("default");
     setSelectedPrice("default");
+    filtersOrSortEvents(categoryName, "Category");
   };
 
   const handleSelectBrand = (e) => {
@@ -48,11 +49,13 @@ const FiltersSorting = () => {
   const handleFilterBrand = () => {
     dispatch(filterByBrand(selectedBrand));
     dispatch(orderPrice(selectedPrice));
+    filtersOrSortEvents(selectedBrand, "Brand");
   };
 
   const handleOrderPrice = (e) => {
     dispatch(orderPrice(e.target.value));
     setSelectedPrice(e.target.value);
+    filtersOrSortEvents(e.target.value, "Price");
   };
 
   const clearFilters = () => {
@@ -66,17 +69,23 @@ const FiltersSorting = () => {
     setSelectedCategory("all");
   };
 
+  const cantlg = Math.ceil(categories.length / 2);
+  const cantmd = Math.ceil(categories.length / 3);
+  const cantsm = Math.ceil(categories.length / 4);
+
   const Selects = styled(Select)({
     height: 40,
-    marginRight: 20,
+    marginInline: 1,
     borderRadius: 10,
     fontSize: 20,
     fontWeight: 700,
   });
 
   const Buttons = styled(Button)({
-    marginLeft: 20,
+    marginInline: 20,
     width: 100,
+
+    ml: { xs: 1, lg: -2.1 },
     backgroundColor: "black",
     color: "white",
     "&:hover": {
@@ -96,6 +105,11 @@ const FiltersSorting = () => {
     fontWeight: 700,
   });
 
+  useEffect(() => {
+    dispatch(fetchCategories);
+    dispatch(fetchBrands);
+  }, [dispatch]);
+
   return (
     <>
       <Container
@@ -111,56 +125,74 @@ const FiltersSorting = () => {
           sx={{
             mt: 2,
             display: "grid",
-            gridTemplateColumns: { xs: "repeat(3,1fr)", lg: "repeat(6,1fr)" },
+            //gridGap: { xs: 0, lg: 0 }, // Ajusta el espacio entre filas según el tamaño de la pantalla
+            gridTemplateColumns: {
+              xxs: "repeat(3,1fr)",
+              xs: "repeat(3,1fr)",
+              sm: `repeat(${cantsm}, 1fr)`,
+              md: `repeat(${cantmd}, 1fr)`,
+              lg: `repeat(${cantlg},1fr)`,
+            },
+            gridTemplateRows: {
+              lg: "repeat(2, 1fr)",
+              md: "repeat(3, 1fr)",
+              sm: "repeat(4, 1fr)",
+            },
             flexDirection: "row",
-            ml: { xs: 1, lg: 10 },
+            //ml: { xs: 1, lg: 10 },
             mb: 2,
-            width: { xs: "100%", md: "80%", lg: "60%", xl: "50%" },
+            width: { xs: "auto", md: "auto", lg: "auto", xl: "auto" },
           }}
         >
-          {categories.map((categorie) => (
-            <Button
-              key={categorie.id}
-              sx={{
-                padding: (1, 1, 1, 1),
-                display: "flex",
-                flexDirection: "column",
-                textAlign: "center",
-                backgroundColor:
-                  categorie.name === selectedCategory ? "#b54410" : "#fd611a",
-                width: 90,
-                height: 90,
-                ml: { xs: 3, lg: -2.1 },
-                mt: 2,
-                borderColor:
-                  categorie.name === selectedCategory ? "white" : undefined,
-                borderStyle: "solid",
-                borderWidth: 2, // Puedes ajustar el ancho del borde según tus preferencias
-                "&:hover": { color: "black", backgroundColor: "#b54410" },
-              }}
-              onClick={() => handleCategoryClick(categorie.name)}
-            >
-              <CategorieMedia
-                component="img"
-                src={categorie.image}
-                alt={categorie.name}
+          {[...categories]
+            .sort((a, b) => a.name.localeCompare(b.name))
+            .map((categorie) => (
+              <Button
+                key={categorie.id}
                 sx={{
+                  padding: (1, 1, 1, 1),
                   display: "flex",
-                  flexWrap: "wrap",
-                  backgroundColor: "none",
+                  flexDirection: "column",
+                  textAlign: "center",
+                  backgroundColor:
+                    categorie.name === selectedCategory ? "#b54410" : "#fd611a",
+                  width: 100,
+                  height: 100,
+                  ml: { xxs: 1, xs: 1, sm: 1, md: 1, lg: 1 },
+                  mr: { xxs: 1, xs: 1, sm: 1, md: 1, lg: 1 },
+                  mt: 2,
+                  borderColor:
+                    categorie.name === selectedCategory ? "white" : undefined,
+                  borderStyle: "solid",
+                  borderWidth: 2,
+                  "&:hover": { color: "black", backgroundColor: "#b54410" },
                 }}
-              ></CategorieMedia>
-              <Typography
-                sx={{ color: "black", fontSize: 10, fontWeight: 700 }}
+                onClick={() => handleCategoryClick(categorie.name)}
               >
-                {categorie.name}
-              </Typography>
-            </Button>
-          ))}
+                <CategorieMedia
+                  component="img"
+                  src={categorie.image}
+                  alt={categorie.name}
+                  sx={{
+                    display: "flex",
+                    flexWrap: "wrap",
+                    backgroundColor: "none",
+                  }}
+                ></CategorieMedia>
+                <Typography
+                  sx={{ color: "black", fontSize: 10, fontWeight: 700 }}
+                >
+                  {categorie.name}
+                </Typography>
+              </Button>
+            ))}
         </Box>
       </Container>
-      <Box display="flex" alignItems="center">
-        <Box display="flex" sx={{ flexDirection: { xs: "column", lg: "row" } }}>
+      <Box display="flex" alignItems="center" >
+        <Box
+          display="flex"
+          sx={{ flexDirection: { xxs: "column", xs: "column", lg: "row" } }}
+        >
           <FormControl
             sx={{
               mt: 2,
@@ -172,16 +204,18 @@ const FiltersSorting = () => {
             <Selects
               value={selectedBrand}
               onChange={handleSelectBrand}
-              sx={{ width: { xs: 200, lg: 400 } }}
+              sx={{ width: { xxs: 170, xs: 200, lg: 400 } }}
             >
               <Options value="default" disabled>
                 Marca
               </Options>
-              {brands.map((brand, i) => (
-                <Options key={brand} value={brand}>
-                  {brand}
-                </Options>
-              ))}
+              {[...brands]
+                .sort((a, b) => a.name.localeCompare(b.name))
+                .map((brand) => (
+                  <Options key={brand.name} value={brand.name}>
+                    {brand.name}
+                  </Options>
+                ))}
             </Selects>
           </FormControl>
           <FormControl
@@ -196,7 +230,7 @@ const FiltersSorting = () => {
             <Selects
               value={selectedPrice}
               onChange={handleOrderPrice}
-              sx={{ width: { xs: 200, lg: 400 } }}
+              sx={{ width: { xxs: 170, xs: 200, lg: 400 } }}
             >
               <Options value="default" disabled>
                 Precio
@@ -209,8 +243,8 @@ const FiltersSorting = () => {
         <Box
           display="flex"
           sx={{
-            flexDirection: { xs: "column", lg: "row" },
-            mr: { xs: 4 },
+            flexDirection: { xxs: "column", xs: "column", lg: "row" },
+            mr: { xxs: 4, xs: 4 },
             position: "relative",
             left: "30px",
           }}

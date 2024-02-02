@@ -10,11 +10,13 @@ import {
   CardMedia,
   styled,
   Button,
+  CircularProgress,
 } from "@mui/material";
 import DeleteForeverIcon from "@mui/icons-material/DeleteForever";
 import { Unstable_NumberInput as BaseNumberInput } from "@mui/base/Unstable_NumberInput";
 import RemoveIcon from "@mui/icons-material/Remove";
 import AddIcon from "@mui/icons-material/Add";
+import Swal from "sweetalert2";
 
 //REDUX
 import {
@@ -25,19 +27,31 @@ import {
 } from "../../redux/slices/cartSlice";
 //SERVICES
 import {
-  fetchCart,
-  fetchCount,
-  fetchDelete,
-  fetchGetProduct,
-} from "../../services/productServices";
+  fetchCartMercadoPago,
+  fetchCountCartPut,
+  fetchDeleteCartProduct,
+} from "../../services/cartServices";
+
+//FIREBASE
+import {
+  userViewCartEvent,
+  removeProductFromCart,
+  generatePurchaseOrderEvent,
+} from "../../services/firebaseAnayticsServices";
+import { useNavigate } from "react-router-dom";
 
 export default function ShoppingCart() {
   const dispatch = useDispatch();
+  const [isWalletLoading, setIsWalletLoading] = useState(false);
+  const navigate = useNavigate();
 
   const { items, total, id } = useSelector((state) => state.cart);
   const { cookiesAccepted } = useSelector((state) => state.cookies);
-
   initMercadoPago(import.meta.env.VITE_MP_PUBLIC_KEY, { locale: "es-AR" });
+
+  useEffect(() => {
+    userViewCartEvent(items, total);
+  }, []);
 
   useEffect(() => {
     dispatch(addItem());
@@ -46,6 +60,11 @@ export default function ShoppingCart() {
   useEffect(() => {
     dispatch(totalItem());
   }, [items]);
+
+  const handleClickShop = async (item) => {
+    const { id } = item;
+    navigate(`/product/${id}`);
+  };
 
   const ProductMedia = styled(CardMedia)({
     padding: 5,
@@ -63,26 +82,39 @@ export default function ShoppingCart() {
     return (
       <Box
         sx={{
+          // display: "flex",
+          // alignItems: "center",
+          // alignContent: "space-around",
+          // justifyContent: "space-around",
+          width: "100%",
+          height: "100%",
           display: "flex",
+          flexDirection: "column",
+          justifyContent: "center",
           alignItems: "center",
-          alignContent: "space-around",
-          justifyContent: "space-around",
+          gap: "2em",
+          textAlign: "center",
+          mt: 31,
+          mb: 31,
         }}
       >
-        <Typography
-          sx={{ m: 10, fontWeight: "bold", fontSize: 28 }}
-          component="h2"
-        >
+        <Typography sx={{ m: 10, fontWeight: "bold" }} variant="h2">
           No hay productos en el carrito
         </Typography>
       </Box>
     );
   }
 
+  const formatPrice = (price) => {
+    return "$" + price.toFixed(0).replace(/(\d)(?=(\d{3})+$)/g, "$1.");
+  };
+
   const handleChange = (productId, value) => {
     const newValue = parseInt(value) || 1;
     dispatch(updateItem({ id: productId, count: newValue }));
-    dispatch(fetchCount({ id: productId, count: newValue }), cookiesAccepted);
+    dispatch(
+      fetchCountCartPut({ id: productId, count: newValue }, cookiesAccepted)
+    );
   };
 
   const handleIncrement = (productId) => {
@@ -104,24 +136,44 @@ export default function ShoppingCart() {
 
   const handleDelete = (product) => {
     dispatch(removeItem(product));
-    dispatch(fetchDelete(product, cookiesAccepted));
+    dispatch(fetchDeleteCartProduct(product, cookiesAccepted));
+    removeProductFromCart(product); // Evento eliminar producto del carrito
   };
 
   const handleShop = (e) => {
-    dispatch(fetchCart(items, cookiesAccepted));
-    window.localStorage.setItem("storedProducts", JSON.stringify([]));
+    setIsWalletLoading(true);
+    const filter = items.filter((item) => item.stock < 1);
+    if (filter.length === 0) {
+      dispatch(fetchCartMercadoPago(items, cookiesAccepted));
+      generatePurchaseOrderEvent(items, total); //Evento de generación de orden de compra
+    } else {
+      Swal.fire({
+        icon: "info",
+        title: "Producto sin stock",
+        text: `Producto momentaneamente no disponible ${filter[0].name}`,
+        confirmButtonColor: "#3085d6",
+        confirmButtonText: "Ok",
+      });
+    }
   };
-
+  const customization = {
+    visual: {
+      buttonBackground: "black",
+      borderRadius: "10px",
+    },
+  };
   return (
     <Container
       display="flex"
+      gap={1}
       sx={{
         flexDirection: "column",
         mt: 10,
+
         marginBottom: "100px",
       }}
     >
-      <Typography display="flex" component="h2" sx={{ fontSize: 30, mb: 5 }}>
+      <Typography component="h2" sx={{ textAlign:{xxs:'center', sm:'left'}, fontSize: 30, mb: 5 }}>
         Mi Compra
       </Typography>
       <Box display="flex" flexDirection="column">
@@ -129,96 +181,129 @@ export default function ShoppingCart() {
           <Box
             key={item.id}
             display="flex"
-            flexDirection="row"
             alignItems="center"
             justifyContent="space-evenly"
             boxShadow="5px 5px 5px #888888"
             borderRadius="8px"
-            sx={{ mb: 4 }}
-          >
+            sx={{ mb: 4 ,
+              flexDirection:{xxs:"column",sm:"row"},
+              gap:'1em'
+            }}
+            >
             <ProductMedia
               component="img"
+              onClick={() => handleClickShop(item)}
               alt={item.name}
               src={item.ProductImages.address}
               sx={{
-                width: { xs: "70px", sm: "140px" }, // Establece el ancho de la imagen
+                width: { xxs: "140px", sm: "150px"}, // Establece el ancho de la imagen
+                cursor: "pointer" 
               }}
             />
             <Typography
               sx={{
                 fontSize: "1rem",
-                maxWidth: "150px",
+                maxWidth: {xxs:'none', sm:"150px"},
                 overflow: "hidden",
                 textOverflow: "ellipsis",
               }}
             >
               {item.name}
             </Typography>
-
-            <BaseNumberInput
-              min={1}
-              max={10}
-              id={item.id}
-              value={item.count}
-              onChange={(event, value) => handleChange(item.id, value)}
-              slots={{
-                root: StyledInputRoot,
-                input: StyledInput,
-                incrementButton: StyledButton,
-                decrementButton: StyledButton,
-              }}
-              slotProps={{
-                incrementButton: {
-                  children: (
-                    <AddIcon
-                      fontSize="small"
-                      onClick={() => handleIncrement(item.id)}
-                    />
-                  ),
-                  className: "increment",
-                },
-                decrementButton: {
-                  children: (
-                    <RemoveIcon
-                      fontSize="small"
-                      onClick={() => handleDecrement(item.id)}
-                    />
-                  ),
-                  className: "decrement",
-                },
-              }}
-              sx={{
-                width: {
-                  xs: "100px",
-                  sm: "150px",
-                },
-                "& .increment, & .decrement": {
-                  backgroundColor: "#fd611a",
-                  borderColor: "#fd611a",
-                  color: "white",
-                  "&:hover": {
-                    backgroundColor: "#e04d17",
-                    borderColor: "#e04d17",
-                    color: "white",
+            <Box display="flex" gap={1} flexDirection="column" alignItems="center">
+              <BaseNumberInput
+                min={1}
+                max={item.stock}
+                id={item.id}
+                value={item.count}
+                onChange={(event, value) => handleChange(item.id, value)}
+                slots={{
+                  root: StyledInputRoot,
+                  input: StyledInput,
+                  incrementButton: StyledButton,
+                  decrementButton: StyledButton,
+                }}
+                slotProps={{
+                  incrementButton: {
+                    children: (
+                      <AddIcon
+                        fontSize="small"
+                        onClick={() => handleIncrement(item.id)}
+                      />
+                    ),
+                    className: "increment",
                   },
-                },
-                "& input": {
-                  "&:hover": {
-                    borderColor: "#e04d17", // Ajusta el color del borde al pasar el ratón sobre el input
+                  decrementButton: {
+                    children: (
+                      <RemoveIcon
+                        fontSize="small"
+                        onClick={() => handleDecrement(item.id)}
+                      />
+                    ),
+                    className: "decrement",
                   },
-                  "&:focus": {
+                }}
+                sx={{
+                  width: {
+                    xs: "100px",
+                    sm: "150px",
+                  },
+                  "& .increment, & .decrement": {
+                    backgroundColor: "#fd611a",
                     borderColor: "#fd611a",
-                    boxShadow: "0 0 0 3px #fd611a",
-                    "&.focused": {
-                      borderColor: "#fd611a",
-                      boxShadow: "0 0 0 3px #fd611a",
+                    color: "white",
+                    "&:hover": {
+                      backgroundColor: "#e04d17",
+                      borderColor: "#e04d17",
+                      color: "white",
                     },
                   },
-                },
-              }}
-            />
-
-            <Typography>Precio: ${item.price * item.count}</Typography>
+                  "& input": {
+                    "&:hover": {
+                      borderColor: "#e04d17", // Ajusta el color del borde al pasar el ratón sobre el input
+                    },
+                    "&:focus": {
+                      borderColor: "#fd611a",
+                      boxShadow: "0 0 0 3px #fd611a",
+                      "&.focused": {
+                        borderColor: "#fd611a",
+                        boxShadow: "0 0 0 3px #fd611a",
+                      },
+                    },
+                  },
+                }}
+              />
+              {item.stock > 0 && (
+                <Typography
+                  variant="body1"
+                  sx={{
+                    paddingTop: { xs: 1, lg: 2 },
+                    color: "grey",
+                    fontWeight: 700,
+                  }}
+                >
+                  {item.stock}
+                  {item.stock === 1
+                    ? " unidad disponible"
+                    : " unidades disponibles"}{" "}
+                </Typography>
+              )}
+              {item.stock === 0 && (
+                <Typography
+                  variant="body1"
+                  sx={{
+                    paddingTop: { xs: 1, lg: 2 },
+                    color: "red",
+                    fontWeight: 700,
+                  }}
+                >
+                  ¡Producto sin stock!
+                </Typography>
+              )}
+            </Box>
+            <Typography>
+              Precio: {formatPrice(item.price * item.count)}
+            </Typography>
             <Button onClick={() => handleDelete(item.id)}>
               <DeleteForeverIcon sx={{ color: "#fd611a" }} />
             </Button>
@@ -241,7 +326,7 @@ export default function ShoppingCart() {
             }}
           >
             <Typography sx={{ mr: 8, ml: 8, fontSize: 28, fontWeight: "bold" }}>
-              Total: ${total}
+              Total: {formatPrice(total)}
             </Typography>
           </Box>
           <Button
@@ -269,7 +354,33 @@ export default function ShoppingCart() {
           </Button>
         </Box>
       </Box>
-      <Box>{id && <Wallet initialization={{ preferenceId: id }} />}</Box>
+      <Box>
+        {isWalletLoading && (
+          <Box
+            sx={{ width: "100%", display: "flex", justifyContent: "center" }}
+          >
+            <CircularProgress
+              sx={{
+                display: "flex",
+                justifyContent: "center",
+                mb: 5,
+                color: "#fd611a",
+              }}
+            />
+          </Box>
+        )}
+        {id && (
+          <Box sx={{ display: isWalletLoading ? "none" : "block" }}>
+            <Wallet
+              onReady={() => {
+                setIsWalletLoading(false);
+              }}
+              initialization={{ preferenceId: id }}
+              customization={customization}
+            />
+          </Box>
+        )}
+      </Box>
     </Container>
   );
 }

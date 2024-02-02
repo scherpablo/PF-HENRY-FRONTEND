@@ -1,7 +1,7 @@
 //HOOKS
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { useSelector, useDispatch } from "react-redux";
+import { useSelector } from "react-redux";
 //MATERIAL UI
 import {
   Box,
@@ -13,29 +13,22 @@ import {
 } from "@mui/material";
 import { Menu, ArrowBack } from "@mui/icons-material";
 //UTILS
-import { removeAuthDataCookie } from "../../utils/cookiesFunctions";
 import UserPanelItems from "../../utils/UserPanelItems.jsx";
 //REDUX
-import { logoutUser } from "../../redux/slices/userSlice.js";
-
+import useLogoutUser from "../../Hook/useLogoutUser.jsx";
 const SideBar = () => {
-  const dispatch = useDispatch();
   const { name, surname } = useSelector((state) => state.user);
-
+  const cookieStatus = useSelector((state) => state.cookies.cookiesAccepted);
   const items = UserPanelItems(name, surname);
-
-  const logout = () => {
-    removeAuthDataCookie("authData");
-    removeAuthDataCookie("jwt");
-    dispatch(logoutUser());
-  };
-
+  const logoutUser = useLogoutUser(cookieStatus);
   const actualLocation = useLocation().pathname;
-
   const [sideBarIsOpen, setSideBarIsOpen] = useState(false);
-
   const sideBarBoxStyle = sideBarIsOpen
     ? {
+        overflow: "scroll",
+        "&::-webkit-scrollbar": {
+          display: "none",
+        },
         minWidth: "10em",
         maxWidth: "18em",
         width: "25%",
@@ -43,6 +36,10 @@ const SideBar = () => {
         borderRight: ".1px solid grey",
       }
     : {
+        overflow: "scroll",
+        "&::-webkit-scrollbar": {
+          display: "none",
+        },
         minWidth: "5em",
         maxWidth: "8em",
         width: "5%",
@@ -81,7 +78,7 @@ const SideBar = () => {
               }}
               onClick={() => {
                 if (item.action === "logout") {
-                  logout();
+                  logoutUser.logout();
                 }
               }}
             >

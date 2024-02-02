@@ -1,5 +1,5 @@
 //HOOKS
-import * as React from "react";
+import {useState} from "react";
 import { Link, useLocation } from "react-router-dom";
 //MATERIAL UI
 import {
@@ -15,6 +15,7 @@ import {
 import MenuIcon from "@mui/icons-material/Menu";
 //HELPERS
 import PATHROUTE from "../../helpers/pathRoute";
+import SearchBar from "../SearchBar/SearchBar.component";
 
 const NavBar = () => {
   const navPages = [
@@ -22,31 +23,26 @@ const NavBar = () => {
     { text: "PRODUCTOS", link: PATHROUTE.PRODUCTS },
     { text: "SOPORTE", link: PATHROUTE.SUPPORT },
     { text: "PREGUNTAS FRECUENTES", link: PATHROUTE.QUESTIONS },
+    { text: "RESEÑAS", link: PATHROUTE.REVIEW },
   ];
 
   const { pathname } = useLocation();
-
-  const [anchorElNav, setAnchorElNav] = React.useState(null);
-
+  const [anchorElNav, setAnchorElNav] = useState(null);
   const handleOpenNavMenu = (event) => {
     setAnchorElNav(event.currentTarget);
   };
-
   const handleCloseNavMenu = () => {
     setAnchorElNav(null);
   };
 
   return (
     <AppBar
-      position="static"
-      sx={{
-        height: 45,
-      }}
+    position="sticky"
     >
+      <SearchBar />
       <Toolbar disableGutters sx={{ backgroundColor: "#fd611a" }}>
         <Box
           sx={{
-            flexGrow: 1,
             display: { sm: "flex", md: "none" },
           }}
         >
@@ -77,11 +73,19 @@ const NavBar = () => {
             sx={{
               display: { xs: "block", md: "none" },
             }}
+            PaperProps={{
+              sx: {
+                width: "100%",
+              },
+            }}
           >
             {navPages.map((item, i) => (
               <MenuItem key={i} onClick={handleCloseNavMenu}>
-                <Link to={item.link} style={{ textDecoration: "none" }}>
-                  <Typography textAlign="center">{item.text}</Typography>
+                <Link
+                  to={item.link}
+                  style={{ textDecoration: "none", color: "black" }}
+                >
+                  <Typography variant="h6">{item.text}</Typography>
                 </Link>
               </MenuItem>
             ))}
@@ -90,7 +94,7 @@ const NavBar = () => {
         <Box
           sx={{
             flexGrow: 1,
-            display: { xs: "none", md: "flex" },
+            display: { xxs: "none", xs: "none", md: "flex" },
             justifyContent: "space-evenly",
             height: 40,
           }}
@@ -100,6 +104,7 @@ const NavBar = () => {
               <Button
                 key={i}
                 onClick={handleCloseNavMenu}
+                variant="h6"
                 sx={{
                   height: 10,
                   my: 2,
@@ -114,6 +119,7 @@ const NavBar = () => {
           ))}
         </Box>
       </Toolbar>
+
     </AppBar>
   );
 };

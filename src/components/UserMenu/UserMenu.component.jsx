@@ -1,7 +1,7 @@
 //HOOKS
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { useDispatch, useSelector } from "react-redux";
+import { Link } from "react-router-dom";
+import { useSelector } from "react-redux";
 //MATERIAL UI
 import {
   Box,
@@ -13,27 +13,22 @@ import {
   IconButton,
   Typography,
   Tooltip,
+  CircularProgress,
 } from "@mui/material";
 //HELPERS
-import PATHROUTES from "../../helpers/pathRoute";
 import getFirstLetters from "../../helpers/getFirstLetters";
 //UTILS
 import UserPanelItems from "../../utils/UserPanelItems.jsx";
-//REDUX
-import { logoutUser } from "../../redux/slices/userSlice.js";
-import { clearPersistanceData } from "../../utils/authMethodSpliter.js";
-import { logOutUser } from "../../services/authServices.js";
+import useLogoutUser from "../../Hook/useLogoutUser.jsx";
 
 const UserMenu = () => {
-  const navigate = useNavigate();
-  const dispatch = useDispatch();
   const cookieStatus = useSelector((state) => state.cookies.cookiesAccepted);
-
   const { name, surname } = useSelector((state) => state.user);
+  const [loading, setLoading] = useState(false);
 
   const initialLetersUsers = {
-    name: getFirstLetters(name),
-    surname: getFirstLetters(surname),
+    name: getFirstLetters(name?.split(" ")[0]),
+    surname: getFirstLetters(surname?.split(" ")[0]),
   };
 
   const items = UserPanelItems(name, surname);
@@ -43,20 +38,24 @@ const UserMenu = () => {
   const handleClick = (event) => {
     setAnchorEl(event.currentTarget);
   };
+  const logOutUser = useLogoutUser(cookieStatus);
 
   const logout = async () => {
-    clearPersistanceData(cookieStatus, true);
-    dispatch(logoutUser());
-    logOutUser();
-
-    navigate(PATHROUTES.HOME);
+    setLoading(true);
+    await logOutUser.logout();
   };
 
   const handleClose = () => {
     setAnchorEl(null);
   };
 
-  return (
+  return loading ? (
+    <CircularProgress
+      sx={{
+        color: "#fd611a",
+      }}
+    />
+  ) : (
     <Box>
       <Box
         sx={{
@@ -70,14 +69,11 @@ const UserMenu = () => {
             onClick={handleClick}
             size="small"
             sx={{
-              ml: 2,
               display: "flex",
-              flexDirection: "column",
+              flexDirection: "row-reverse",
               alignContent: "center",
-              [`@media (max-width:1200px)`]: {
-                flexDirection: "row-reverse",
-                gap: "1em",
-              },
+              gap: "10px",
+         
             }}
             aria-controls={open ? "account-menu" : undefined}
             aria-haspopup="true"
@@ -92,15 +88,17 @@ const UserMenu = () => {
             >
               <Typography
                 sx={{
-                  fontWeight: "bold",
+                  fontWeight: "bolder",
                   color: "white",
                 }}
               >
                 {initialLetersUsers.name + initialLetersUsers.surname}
               </Typography>
             </Avatar>
-            <Typography sx={{ maxWidth: "8em", textAlign: "center" }}>
-              {name} <br /> {surname}
+            <Typography
+              sx={{ fontWeight: 600, maxWidth: "8em", textAlign: "center" }}
+            >
+              {name?.split(" ")[0]} <br /> {surname?.split(" ")[0]}
             </Typography>
           </IconButton>
         </Tooltip>
@@ -114,7 +112,7 @@ const UserMenu = () => {
         PaperProps={{
           elevation: 0,
           sx: {
-            overflow: "visible",
+            overflow: "scroll",
             filter: "drop-shadow(0px 2px 8px rgba(0,0,0,0.32))",
             mt: 1.5,
             width: "12em",
@@ -158,6 +156,7 @@ const UserMenu = () => {
               to={item.path}
               key={item.name}
               style={{ textDecoration: "none", color: "inherit" }}
+              sx={{}}
             >
               <MenuItem
                 onClick={() => {

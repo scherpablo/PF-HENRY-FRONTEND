@@ -10,30 +10,23 @@ import SideBar from "../SideBar/SideBar.component";
 import UserProfile from "../UserProfile/UserProfile.component";
 import ShopingProfile from "../ShoppingProfile/ShoppingProfile.component";
 import WishListProfile from "../WishListProfile/WishListProfile.component";
-
+import AnalyticsInfo from "../AnalyticsInfo/AnalyticsInfo.component";
 import ProductCreateProfile from "../ProductCreateProfile/ProductCreateProfile.component";
 import ProductsServicesProfile from "../ProductsServicesProfile/ProductServicesProfile.component";
 import CreateService from "../CreateService/CreateService.component";
 import UsersTable from "../UsersTable/UsersTable.component";
 import ProductsTable from "../ProductsTable/ProductsTable.component";
+import ServicesTable from "../ServicesTable/ServicesTable.component";
+import Error404View from "../../views/publics/Error404/Error404.view";
+import { GoogleOAuthProvider } from "@react-oauth/google";
 //HELPERS
 import PATHROUTES from "../../helpers/pathRoute";
 //UTILS
 import { getDataFromSelectedPersistanceMethod } from "../../utils/authMethodSpliter";
+import { useTheme } from "@mui/system";
 
 const UserPanelComponent = () => {
-  const theme = createTheme({
-    breakpoints: {
-      values: {
-        xs: 0,
-        xxs: 480,
-        sm: 600,
-        md: 900,
-        lg: 1200,
-        xl: 1536,
-      },
-    },
-  });
+  const theme = useTheme();
   const navigate = useNavigate();
   const actualLocation = useLocation().pathname;
   const cookieStatus = useSelector((state) => state.cookies.cookiesAccepted);
@@ -65,7 +58,19 @@ const UserPanelComponent = () => {
       roles: ["admin"],
     },
     {
+      path: PATHROUTES.ADMIN_USER_PANEL + PATHROUTES.PRODUCTS_LIST,
+      roles: ["admin"],
+    },
+    {
       path: PATHROUTES.ADMIN_USER_PANEL + PATHROUTES.PRODUCT_CREATE,
+      roles: ["admin"],
+    },
+    {
+      path: PATHROUTES.ADMIN_USER_PANEL + PATHROUTES.SERVICE_LIST,
+      roles: ["admin"],
+    },
+    {
+      path: PATHROUTES.ADMIN_USER_PANEL + PATHROUTES.SERVICE_CREATE,
       roles: ["admin"],
     },
     {
@@ -73,11 +78,7 @@ const UserPanelComponent = () => {
       roles: ["admin"],
     },
     {
-      path: PATHROUTES.ADMIN_USER_PANEL + PATHROUTES.PRODUCTS_LIST,
-      roles: ["admin"],
-    },
-    {
-      path: PATHROUTES.ADMIN_USER_PANEL + PATHROUTES.CREATE_SERVICES,
+      path: PATHROUTES.ADMIN_USER_PANEL + PATHROUTES.ANALYTICS_INFO,
       roles: ["admin"],
     },
     //TECHNICIANS
@@ -90,7 +91,7 @@ const UserPanelComponent = () => {
       roles: ["technician"],
     },
     {
-      path: PATHROUTES.TECHNICIAN_USER_PANEL + PATHROUTES.CREATE_SERVICES,
+      path: PATHROUTES.TECHNICIAN_USER_PANEL + PATHROUTES.SERVICE_CREATE,
       roles: ["technician"],
     },
   ];
@@ -129,8 +130,8 @@ const UserPanelComponent = () => {
         [theme.breakpoints.down("sm")]: {
           mt: ".5em",
         },
-        [theme.breakpoints.down("xxs")]: {
-          mb: "6.25em",
+        [theme.breakpoints.down("xs")]: {
+          mb: "8em",
         },
       }}
     >
@@ -161,37 +162,38 @@ const UserPanelComponent = () => {
           path={userRole === "admin" ? PATHROUTES.PROFILE : PATHROUTES.PROFILE}
           element={<UserProfile />}
         />
+        <Route path={PATHROUTES.ERROR_404} element={<Error404View />} />
         <Route
           path={
             userRole === "admin"
-              ? PATHROUTES.PRODUCT_CREATE
+              ? PATHROUTES.PRODUCTS_LIST
               : userRole === "customer"
               ? PATHROUTES.SHOPINGS
-              : PATHROUTES.CREATE_SERVICES
+              : PATHROUTES.PRODUCTS_SERVICES
           }
           element={
             userRole === "admin" ? (
-              <ProductCreateProfile />
+              <ProductsTable />
             ) : userRole === "customer" ? (
               <ShopingProfile />
             ) : (
-              <CreateService />
+              <ProductsServicesProfile />
             )
           }
         />
         <Route
           path={
             userRole === "admin"
-              ? PATHROUTES.USERS_LIST
+              ? PATHROUTES.PRODUCT_CREATE
               : userRole === "customer"
               ? PATHROUTES.WISHLIST
               : userRole === "technician"
-              ? PATHROUTES.CREATE_SERVICES
+              ? PATHROUTES.SERVICE_CREATE
               : PATHROUTES.PROFILE
           }
           element={
             userRole === "admin" ? (
-              <UsersTable />
+              <ProductCreateProfile />
             ) : userRole === "customer" ? (
               <WishListProfile />
             ) : userRole === "technician" ? (
@@ -204,30 +206,79 @@ const UserPanelComponent = () => {
         <Route
           path={
             userRole === "admin"
-              ? PATHROUTES.PRODUCTS_LIST
-              : PATHROUTES.PRODUCTS_SERVICES
+              ? PATHROUTES.SERVICE_LIST
+              : userRole === "customer"
+              ? PATHROUTES.PRODUCTS_SERVICES
+              : PATHROUTES.PROFILE
           }
           element={
             userRole === "admin" ? (
-              <ProductsTable />
-            ) : (
+              <ServicesTable />
+            ) : userRole === "customer" ? (
               <ProductsServicesProfile />
+            ) : (
+              <UserProfile />
             )
           }
         />
         <Route
           path={
             userRole === "admin"
-              ? PATHROUTES.CREATE_SERVICES
+              ? PATHROUTES.SERVICE_CREATE
+              : PATHROUTES.PROFILE
+          }
+          element={
+            userRole === "admin" ? (
+              <CreateService />
+            ) : userRole === "customer" ? (
+              <ProductsServicesProfile />
+            ) : (
+              <UserProfile />
+            )
+          }
+        />
+        <Route
+          path={
+            userRole === "admin"
+              ? PATHROUTES.SERVICE_CREATE
               : PATHROUTES.PROFILE
           }
           element={userRole === "admin" ? <CreateService /> : <UserProfile />}
+        />
+        <Route
+          path={
+            userRole === "admin" ? PATHROUTES.USERS_LIST : PATHROUTES.PROFILE
+          }
+          element={userRole === "admin" ? <UsersTable /> : <UserProfile />}
+        />
+        <Route
+          path={
+            userRole === "admin" ? PATHROUTES.USERS_LIST : PATHROUTES.PROFILE
+          }
+          element={userRole === "admin" ? <UsersTable /> : <UserProfile />}
+        />
+        <Route
+          path={
+            userRole === "admin"
+              ? PATHROUTES.ANALYTICS_INFO
+              : PATHROUTES.PROFILE
+          }
+          element={
+            userRole === "admin" ? (
+              <GoogleOAuthProvider
+                clientId={import.meta.env.VITE_REPORTING_ANALYTICS_CLIENT_ID}
+              >
+                <AnalyticsInfo />
+              </GoogleOAuthProvider>
+            ) : (
+              <UserProfile />
+            )
+          }
         />
       </Routes>
       <Box
         sx={{
           width: "15%",
-          minHeight: "1vh",
           display: "flex",
           justifyContent: "center",
           alignItems: "center",

@@ -85,19 +85,27 @@ const confirmAddressValidate = (address, confirmAddress) => {
 
 // Validacion de nombre de usuario
 const usernameValidate = (username) => {
-  const { regexContainSpaces, minCantCharUsername, maxCantCharUsername } =
-    constsUserValidations;
+  const {
+    regexContainSpaces,
+    minCantCharUsername,
+    maxCantCharUsername,
+    // regexContainNumber, 
+  } = constsUserValidations;
   let usernameError = "";
+
   if (!username) {
     usernameError = "El nombre de usuario es requerido";
   } else if (username.length < minCantCharUsername) {
     usernameError = `El nombre de usuario debe contener al menos ${minCantCharUsername} caracteres`;
   } else if (username.length > maxCantCharUsername) {
     usernameError = `El nombre de usuario debe contener máximo ${maxCantCharUsername} caracteres`;
-  } else {
-    regexContainSpaces.test(username) &&
-      (usernameError = "El nombre de usuario no puede contener espacios");
-  }
+  } else if (regexContainSpaces.test(username)) {
+    usernameError = "El nombre de usuario no puede contener espacios";
+   } 
+  //  else if (regexContainNumber.test(username)) {
+  //   usernameError = "El nombre de usuario no puede contener números";
+  // }
+
   return usernameError;
 };
 
@@ -149,7 +157,7 @@ const phoneNumberValidate = (phoneNumber) => {
 };
 
 const nameValidate = (name) => {
-  const { minCantCharName, maxCantCharName, regexContainSpecialCharacters } =
+  const { minCantCharName, maxCantCharName, regexContainSpecialCharacters, regexContainNumber,  } =
     constsUserValidations;
   let nameError = "";
   if (!name || name === "") {
@@ -160,12 +168,15 @@ const nameValidate = (name) => {
     nameError = `El nombre debe contener máximo ${maxCantCharName} caracteres`;
   } else if (regexContainSpecialCharacters.test(name)) {
     nameError = "El nombre no puede contener caracteres especiales";
+  }else if (regexContainNumber.test(name)) {
+    nameError = "El nombre de usuario no puede contener números";
   }
+
   return nameError;
 };
 
 const surnameValidate = (surname) => {
-  const { minCantCharName, maxCantCharName, regexContainSpecialCharacters } =
+  const { minCantCharName, maxCantCharName, regexContainSpecialCharacters, regexContainNumber } =
     constsUserValidations;
   let surnameError = "";
   if (!surname || surname === "") {
@@ -176,7 +187,10 @@ const surnameValidate = (surname) => {
     surnameError = `El apellido debe contener máximo ${maxCantCharName} caracteres`;
   } else if (regexContainSpecialCharacters.test(surname)) {
     surnameError = "El apellido no puede contener caracteres especiales";
+  }else if (regexContainNumber.test(surname)) {
+    surnameError = "El nombre de usuario no puede contener números";
   }
+
   return surnameError;
 };
 
@@ -294,7 +308,7 @@ const zipCodeValidate = (zipCode) => {
 
 // Validacion de información de usuario para inicio de sesion
 export const userLoginValidate = (values, setErrors, antErrors) => {
-  const { username, address } = values;
+  const { username, address, email } = values;
 
   const errors = {
     ...antErrors,
@@ -308,7 +322,10 @@ export const userLoginValidate = (values, setErrors, antErrors) => {
       : (errors.address = "");
   }
 
+  email !== undefined ? (errors.email = emailValidate(email)) : "";
+
   setErrors(errors);
+  return errors;
 };
 
 // Validación de información de usuario para registro
@@ -400,6 +417,24 @@ export const userEditValidate = (values, setErrors, antErrors) => {
   street !== undefined ? (errors.street = streetValidate(street)) : "";
   number !== undefined ? (errors.number = numberValidate(number)) : "";
   zipCode !== undefined ? (errors.zipCode = zipCodeValidate(zipCode)) : "";
+
+  setErrors(errors);
+  return errors;
+};
+
+export const userChangePasswordValidate = (passwords, setErrors, antErrors) => {
+  const errors = { ...antErrors };
+
+  const { password, confirmPassword } = passwords;
+
+  password !== undefined ? (errors.password = addressValidate(password)) : "";
+
+  confirmPassword !== undefined
+    ? (errors.confirmPassword = confirmAddressValidate(
+        password,
+        confirmPassword
+      ))
+    : "";
 
   setErrors(errors);
   return errors;

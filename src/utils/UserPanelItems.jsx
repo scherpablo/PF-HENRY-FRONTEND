@@ -10,6 +10,8 @@ import {
   People,
   Logout,
   FormatListNumbered,
+  MedicalServices,
+  Timeline,
 } from "@mui/icons-material";
 //HELPERS
 import PATHROUTES from "../helpers/pathRoute";
@@ -95,9 +97,24 @@ const UserPanelItems = (name, surname) => {
         path: PATHROUTES.ADMIN_USER_PANEL + PATHROUTES.PROFILE,
       },
       {
+        name: "Lista de productos",
+        icon: <FormatListNumbered />,
+        path: PATHROUTES.ADMIN_USER_PANEL + PATHROUTES.PRODUCTS_LIST,
+      },
+      {
         name: "Crear producto",
         icon: <Add />,
         path: PATHROUTES.ADMIN_USER_PANEL + PATHROUTES.PRODUCT_CREATE,
+      },
+      {
+        name: "Lista de servicios",
+        icon: <MedicalServices />,
+        path: PATHROUTES.ADMIN_USER_PANEL + PATHROUTES.SERVICE_LIST,
+      },
+      {
+        name: "Crear servicio",
+        icon: <Add />,
+        path: PATHROUTES.ADMIN_USER_PANEL + PATHROUTES.SERVICE_CREATE,
       },
       {
         name: "Lista de usuarios",
@@ -105,14 +122,9 @@ const UserPanelItems = (name, surname) => {
         path: PATHROUTES.ADMIN_USER_PANEL + PATHROUTES.USERS_LIST,
       },
       {
-        name: "Lista de productos",
-        icon: <FormatListNumbered />,
-        path: PATHROUTES.ADMIN_USER_PANEL + PATHROUTES.PRODUCTS_LIST,
-      },
-      {
-        name: "Crear servicio",
-        icon: <Add />,
-        path: PATHROUTES.ADMIN_USER_PANEL + PATHROUTES.CREATE_SERVICES,
+        name: "Informes analiticos",
+        icon: <Timeline />,
+        path: PATHROUTES.ADMIN_USER_PANEL + PATHROUTES.ANALYTICS_INFO,
       },
       {
         name: "Cerrar sesion",
@@ -150,7 +162,7 @@ const UserPanelItems = (name, surname) => {
       {
         name: "Crear servicio",
         icon: <Add />,
-        path: PATHROUTES.TECHNICIAN_USER_PANEL + PATHROUTES.CREATE_SERVICES,
+        path: PATHROUTES.TECHNICIAN_USER_PANEL + PATHROUTES.SERVICE_CREATE,
       },
       {
         name: "Cerrar sesion",

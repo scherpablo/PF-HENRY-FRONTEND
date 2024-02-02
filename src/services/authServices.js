@@ -1,9 +1,7 @@
 import axios from "axios";
-import {
-  createPersistency,
-  headerSetterForPetitions,
-} from "../utils/authMethodSpliter";
-
+import { createPersistency } from "../utils/authMethodSpliter";
+// FIREBASE
+import { userLogoutEvent } from "./firebaseAnayticsServices";
 // address = password
 const url = import.meta.env.VITE_BACKEND_URL || "http://localhost:3001";
 
@@ -22,10 +20,8 @@ export const loginUser = async (username, password, cookieStatus) => {
       },
       {
         withCredentials: true,
-        
       }
     );
-
     if (data.login) {
       const sortedData = dataSorterForApp(data);
       createPersistency(sortedData, cookieStatus);
@@ -42,44 +38,102 @@ export const googleLoginUser = async (cookieStatus) => {
       `${url}/auth/google`,
       "targetWindow",
       `toolbar=no,
-        location=no,
-        status=no,
-        menubar=no,
-        scrollbars=yes,
-        resizable=yes,
-        width=620,
-        height=700`
+      location=no,
+      status=no,
+      menubar=no,
+      scrollbars=yes,
+      resizable=yes,
+      width=620,
+      height=700`
     );
+    if (!popup) {
+      throw new Error("Failed to open the authentication window");
+    }
     return new Promise((resolve) => {
       window.addEventListener("message", (event) => {
         if (event.origin === `${url}` && event.data) {
-          const sortedData = dataSorterForApp(event.data);
-          createPersistency(sortedData, cookieStatus);
-          popup.close();
-          resolve({ data: event.data });
+          if (event.data.error) {
+            popup.close();
+            resolve({ error: true, response: event.data.response });
+          } else {
+            const sortedData = dataSorterForApp(event.data);
+            createPersistency(sortedData, cookieStatus);
+            popup.close();
+            resolve({ data: event.data });
+          }
         }
       });
     });
+  } catch (error) {
+    console.error("Error during Google authentication:", error.response);
+    return {
+      error:
+        error.response.message || "An error occurred during authentication",
+    };
+  }
+};
+export const checkSessionStatus = async (jwt) => {
+  try {
+    const response = await axios.get(`${url}/account/jwt-check`, {
+      headers: {
+        Authorization: `Bearer ${jwt}`,
+      },
+    });
+    if (response.error) return { error: true, message: response.error.name };
+    return response.data;
   } catch ({ response }) {
-    return { error: response };
+    return { error: response.data };
+  }
+};
+export const refreshSessionToken = async (jwt) => {
+  try {
+    const response = await axios.get(`${url}/account/refresh`, {
+      headers: {
+        Authorization: `Bearer ${jwt}`,
+      },
+    });
+    return response.data.jwt;
+  } catch ({ response }) {
+    return { error: response.data };
   }
 };
 export const registerUser = async (userObj) => {
   try {
     const registerData = await axios.post(`${url}/account/signin`, {
       userObj,
-    },{
-      withCredentials: true,
     });
     return { error: false, data: registerData };
   } catch ({ response }) {
     return { error: response.data };
   }
 };
-export const logOutUser = async () => {
+export const sendResetPasswordEmail = async(email) => {
   try {
-    const response = await axios.post(`${url}/account/logout`,{
-      withCredentials: true,
+    const response = await axios.get(`${url}/account/send_reset_pass/${email}`);
+    return response;
+  } catch ({ response }) {
+    return { error: response.data };
+  }
+};
+export const changeUserPassword = async (password, password2, token) => {
+  try {
+    const response = await axios.post(`${url}/account/reset/${token}`, {
+      password,
+      password2,
+      token,
+    });
+    return { error: false, data: response };
+  } catch ({ response }) {
+    return { error: response.data };
+  }
+};
+export const logOutUser = async (jwt) => {
+  try {
+    userLogoutEvent();
+    const response = await axios.get(`${url}/account/logout`, {
+      headers: {
+        Authorization: `Bearer ${jwt}`,
+      },
     });
     return { error: false, data: response };
   } catch ({ response }) {

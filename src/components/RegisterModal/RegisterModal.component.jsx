@@ -14,10 +14,15 @@ import {
 import CancelIcon from "@mui/icons-material/Cancel";
 //HELPERS
 import { userRegisterValidate } from "../../helpers/userValidate";
+//STYLES
+import "../../alertStyles.css";
+//SERVICES
 //REDUX
 import { registerUser } from "../../services/authServices";
 //SWEET ALERT
 import Swal from "sweetalert2";
+//FIREBASE
+import { userRegister } from "../../services/firebaseAnayticsServices";
 
 const reCaptchaKey = import.meta.env.VITE_RECAPTCHA_V3;
 
@@ -137,7 +142,6 @@ const RegisterModal = ({ isOpen, setRegisterModalIsOpen }) => {
       };
       const response = await registerUser(userInfoForRequest);
       const { data, error } = response;
-
       if (error || !data) {
         Swal.fire({
           allowOutsideClick: false,
@@ -146,7 +150,11 @@ const RegisterModal = ({ isOpen, setRegisterModalIsOpen }) => {
           },
           icon: "error",
           title: "Falla en el registro",
-          text: `${response.error}`,
+          text: `${
+            response?.error === "Validation error"
+              ? "El email ingresado esta en uso"
+              : response?.error
+          }`,
         });
       } else {
         Swal.fire({
@@ -158,10 +166,10 @@ const RegisterModal = ({ isOpen, setRegisterModalIsOpen }) => {
           title: "Registro exitoso",
           titleText: "",
           text: `Para poder iniciar sesion confirma el correo que deberia haber llegado a el email: ${userInfo.email}`,
-
           confirmButtonText: "Volver al menu principal",
           confirmButtonColor: "#fd611a",
         }).then((result) => {
+          userRegister(); // Envio de evento a firebase
           resetModal();
         });
       }

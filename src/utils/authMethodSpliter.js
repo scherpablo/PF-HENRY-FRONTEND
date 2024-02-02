@@ -1,6 +1,5 @@
 import { getAuthDataCookie, setAuthDataCookie } from "./cookiesFunctions";
 import { rejectCookies } from "../redux/slices/cookiesSlice";
-import axios from "axios";
 //
 // ESTE ARCHIVO SE ENCARGA DE DETERMINAR SEGUN LA ELECCION DE USAR COOKIES O NO
 // DE DONDE SE SACARA LA INFORMACION DE PERSISTENCIA
@@ -21,8 +20,20 @@ export const createPersistency = (sortedData, cookieStatus) => {
     window.localStorage.setItem("userRole", sortedData.userRole);
   }
 };
+export const updateJwt = (jwt, cookieStatus) => {
+  if (cookieStatus) {
+    const cookie = getAuthDataCookie("authData");
+    cookie.jwt = jwt
+    setAuthDataCookie('authData', cookie)
+  } else {
+    window.localStorage.removeItem("jwt", jwt);
+    window.localStorage.setItem("jwt", jwt);
+   
+  }
+};
 
 export const getDataFromSelectedPersistanceMethod = (cookieStatus) => {
+
   if (cookieStatus) {
     return getAuthDataCookie("authData");
   } else
@@ -35,28 +46,13 @@ export const getDataFromSelectedPersistanceMethod = (cookieStatus) => {
 };
 
 export const clearPersistanceData = (cookieStatus, bool) => {
-  rejectCookies(bool);
-  if (!cookieStatus) {
-    window.localStorage.removeItem("jwt"),
+  if (cookieStatus) rejectCookies();
+  else {
+      window.localStorage.removeItem("jwt"),
       window.localStorage.removeItem("login"),
       window.localStorage.removeItem("userId"),
       window.localStorage.removeItem("userRole");
   }
 };
 
-export const headerSetterForPetitions = (cookiesStatus) => {
-  if (cookiesStatus) {
-    return axios.create({
-      withCredentials: true,
-    });
-  } else {
-    return (token) => {
-      return axios.create({
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-      });
-    };
-  }
-};
+
